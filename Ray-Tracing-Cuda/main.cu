@@ -65,7 +65,8 @@ std::vector<rgb> simple_ray_render(int h, int w, int samples) {
 	world->add_hitable(std::make_shared<sphere>(vec3(0, 0, -1), 0.5, std::make_shared<lambertian>(vec3(0.8, 0.3, 0.3))));
 	world->add_hitable(std::make_shared<sphere>(vec3(0, -100.5, -1), 100, std::make_shared<lambertian>(vec3(0.8, 0.8, 0.0))));
 	world->add_hitable(std::make_shared<sphere>(vec3(1, 0, -1), 0.5, std::make_shared<metal>(vec3(0.8, 0.6, 0.2), 0.3)));
-	world->add_hitable(std::make_shared<sphere>(vec3(-1, 0, -1), 0.5, std::make_shared<metal>(vec3(0.8, 0.8, 0.8), 1.0)));
+	world->add_hitable(std::make_shared<sphere>(vec3(-1, 0, -1), 0.5, std::make_shared<dielectric>(1.5f)));
+	world->add_hitable(std::make_shared<sphere>(vec3(-1, 0, -1), -0.45, std::make_shared<dielectric>(1.5f)));
 
 	for (int i = 0; i < h; i++) {
 		for (int j = 0; j < w; j++) {
@@ -85,9 +86,9 @@ std::vector<rgb> simple_ray_render(int h, int w, int samples) {
 }
 
 int main() {
-	int h = 200;
-	int w = 400;
-	int s = 10;
+	int h = 100;
+	int w = 200;
+	int s = 100;
 
 	auto colors = simple_ray_render(h, w, s);
 	write_ppm_image(colors, h, w, "render");

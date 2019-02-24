@@ -39,3 +39,49 @@ struct metal : public material {
 		return dot(scattered.direction(), rec.normal) > 0;
 	}
 };
+
+struct dielectric : public material {
+	float _ref_idx;
+	dielectric(float ri) : _ref_idx(ri) {
+	}
+
+	inline float schlick(float cosine) const {
+		float r0 = (1 - _ref_idx) / (1 + _ref_idx);
+		r0 = r0 * r0;
+		return r0 + (1 - r0)*pow((1 - cosine), 5);
+	}
+
+	bool scatter(const ray& r_in, const hit_record& rec, vec3& attenuation, ray& scattered) const override {
+		vec3 outward_normal, refracted;
+		vec3 reflected = reflect(r_in.direction(), rec.normal);
+		attenuation = vec3(1.0, 1.0, 1.0);
+		float reflect_prob, ni_over_nt, cosine;
+
+		if (dot(r_in.direction(), rec.normal) > 0) {
+			outward_normal = -rec.normal;
+			ni_over_nt = _ref_idx;
+			cosine = _ref_idx * dot(r_in.direction(), rec.normal) / r_in.direction().length();
+		}
+		else {
+			outward_normal = rec.normal;
+			ni_over_nt = 1.0 / _ref_idx;
+			cosine = -dot(r_in.direction(), rec.normal) / r_in.direction().length();
+		}
+
+		if (refract(r_in.direction(), outward_normal, ni_over_nt, refracted)) {
+			reflect_prob = schlick(cosine);
+		}
+		else {
+			reflect_prob = 1.0;
+		}
+
+		if (dis(gen) < reflect_prob) {
+			scattered = ray(rec.p, reflected);
+		}
+		else {
+			scattered = ray(rec.p, refracted);
+		}
+
+		return true;
+	}
+};
