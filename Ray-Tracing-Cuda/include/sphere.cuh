@@ -1,6 +1,7 @@
 #pragma once
 
 #include <math.h>
+#include <memory>
 #include "vec3.cuh"
 #include "ray.cuh"
 #include "hitable.cuh"
@@ -8,10 +9,10 @@
 struct sphere : public hitable {
 	vec3 _center;
 	float _radius;
-	rgb _color;
+	std::shared_ptr<material> _material;
 
-	sphere() = default;
-	sphere(const vec3& center, float radius, const rgb& color) : _center(center), _radius(radius), _color(color) {
+	//sphere() = default;
+	sphere(const vec3& center, float radius, const std::shared_ptr<material>& material) : _center(center), _radius(radius), _material(material) {
 	}
 
 	bool hit(const ray& r, float t_min, float t_max, hit_record& out) const override {
@@ -27,6 +28,7 @@ struct sphere : public hitable {
 				out.t = temp;
 				out.p = r.point_at_parameter(temp);
 				out.normal = (out.p - _center) / _radius;
+				out.mat_ptr = _material;
 				return true;
 			}
 
@@ -35,6 +37,7 @@ struct sphere : public hitable {
 				out.t = temp;
 				out.p = r.point_at_parameter(temp);
 				out.normal = (out.p - _center) / _radius;
+				out.mat_ptr = _material;
 				return true;
 			}
 		}
@@ -43,9 +46,5 @@ struct sphere : public hitable {
 
 	vec3 normal(const vec3& position) const {
 		return _center - position;
-	}
-
-	rgb color() const {
-		return _color; // todo
 	}
 };

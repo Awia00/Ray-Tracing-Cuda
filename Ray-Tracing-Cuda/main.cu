@@ -10,13 +10,11 @@
 #include "include/hitable.cuh"
 #include "include/hitable_list.cuh"
 #include "include/camera.cuh"
+#include "include/material.cuh"
+#include "include/random_helpers.cuh"
 
 #define RM(row,col,w) row*w+col
 #define CM(row,col,h) col*h+row
-
-// std::random_device rd;	// Will be used to obtain a seed for the random number engine
-std::mt19937 gen(42);		// Standard mersenne_twister_engine seeded with rd()
-std::uniform_real_distribution<float> dis(0.0, 1.0);
 
 void write_ppm_image(std::vector<rgb> colors, int h, int w, std::string filename) {
 	std::ofstream myfile;
@@ -43,19 +41,17 @@ std::vector<rgb> hello_world_render(int h, int w) {
 	return colors;
 }
 
-vec3 random_in_unit_sphere() {
-	vec3 p;
-	do {
-		p = vec3(dis(gen), dis(gen), dis(gen))*2.0 - vec3(1, 1, 1);
-	} while (p.squared_length() >= 1.0);
-	return p;
-}
-
-rgb color(const ray& r, const std::shared_ptr<hitable>& world) {
+rgb color(const ray& r, const std::shared_ptr<hitable>& world, int depth) {
 	hit_record rec;
 	if (world->hit(r, 0.001f, std::numeric_limits<float>::max(), rec)) {
-		auto target = rec.p + rec.normal + random_in_unit_sphere();
-		return color(ray(rec.p, target - rec.p), world)*0.5;
+		ray scattered;
+		vec3 attenuation;
+		if (depth < 50 && rec.mat_ptr->scatter(r, rec, attenuation, scattered)) {
+			return attenuation * color(scattered, world, depth + 1);
+		}
+		else {
+			return rgb(0, 0, 0);
+		}
 	}
 	vec3 unit_direction = unit_vector(r.direction());
 	float t = 0.5f*(unit_direction.e[1] + 1.0f);
@@ -66,8 +62,10 @@ std::vector<rgb> simple_ray_render(int h, int w, int samples) {
 	auto colors = std::vector<rgb>(w*h);
 	auto c = camera();
 	auto world = std::make_shared<hitable_list>();
-	world->add_hitable(std::make_shared<sphere>(vec3(0, 0, -1), 0.5, rgb(1.0, 0, 0)));
-	world->add_hitable(std::make_shared<sphere>(vec3(0, -100.5, -1), 100, rgb(0.0, 1.0, 0)));
+	world->add_hitable(std::make_shared<sphere>(vec3(0, 0, -1), 0.5, std::make_shared<lambertian>(vec3(0.8, 0.3, 0.3))));
+	world->add_hitable(std::make_shared<sphere>(vec3(0, -100.5, -1), 100, std::make_shared<lambertian>(vec3(0.8, 0.8, 0.0))));
+	world->add_hitable(std::make_shared<sphere>(vec3(1, 0, -1), 0.5, std::make_shared<metal>(vec3(0.8, 0.6, 0.2), 0.3)));
+	world->add_hitable(std::make_shared<sphere>(vec3(-1, 0, -1), 0.5, std::make_shared<metal>(vec3(0.8, 0.8, 0.8), 1.0)));
 
 	for (int i = 0; i < h; i++) {
 		for (int j = 0; j < w; j++) {
@@ -76,7 +74,7 @@ std::vector<rgb> simple_ray_render(int h, int w, int samples) {
 				float u = float(j + dis(gen)) / float(w);
 				float v = float(h - i + dis(gen)) / float(h);
 				ray r = c.get_ray(u, v);
-				pix += color(r, world);
+				pix += color(r, world, 0);
 			}
 			pix /= float(samples);
 			pix = pix.v_sqrt(); // gamma correct (gamma 2)

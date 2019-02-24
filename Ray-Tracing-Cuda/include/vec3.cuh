@@ -127,6 +127,10 @@ inline vec3 operator/(const vec3 & v1, const float t) {
 	return vec3(v1[0] / t, v1[1] / t, v1[2] / t);
 }
 
+inline vec3 reflect(const vec3& v, const vec3& n) {
+	return v - n * (2 * dot(v, n));
+}
+
 inline vec3 unit_vector(vec3 v) {
 	return v / v.length();
 }
