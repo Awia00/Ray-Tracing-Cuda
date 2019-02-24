@@ -1,3 +1,4 @@
+#pragma once
 #include <math.h>
 
 struct vec3 {
@@ -75,19 +76,19 @@ struct vec3 {
 };
 
 inline vec3 operator+(const vec3 & v1, const vec3 & v2) {
-	return vec3(v1[0] + v2[0], v1[1] + v2[1], v1[2] + v2[0]);
+	return vec3(v1[0] + v2[0], v1[1] + v2[1], v1[2] + v2[2]);
 }
 
 inline vec3 operator-(const vec3 & v1, const vec3 & v2) {
-	return vec3(v1[0] - v2[0], v1[1] - v2[1], v1[2] - v2[0]);
+	return vec3(v1[0] - v2[0], v1[1] - v2[1], v1[2] - v2[2]);
 }
 
 inline vec3 operator*(const vec3 & v1, const vec3 & v2) {
-	return vec3(v1[0] * v2[0], v1[1] * v2[1], v1[2] * v2[0]);
+	return vec3(v1[0] * v2[0], v1[1] * v2[1], v1[2] * v2[2]);
 }
 
 inline vec3 operator/(const vec3 & v1, const vec3 & v2) {
-	return vec3(v1[0] / v2[0], v1[1] / v2[1], v1[2] / v2[0]);
+	return vec3(v1[0] / v2[0], v1[1] / v2[1], v1[2] / v2[2]);
 }
 
 inline vec3 cross(const vec3 & v1, const vec3 & v2) {
@@ -99,7 +100,7 @@ inline vec3 cross(const vec3 & v1, const vec3 & v2) {
 }
 
 inline float dot(const vec3 & v1, const vec3 & v2) {
-	return v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[0];
+	return v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2];
 }
 
 inline vec3 operator*(const vec3 & v1, const float t) {
@@ -126,7 +127,13 @@ inline std::ostream& operator<<(std::ostream& is, vec3 &t) {
 
 // Specific versions
 
-struct RGB : public vec3 {
+struct rgb : public vec3 {
+	rgb() = default;
+	rgb(const vec3& v) {
+		e[0] = v[0];
+		e[1] = v[1];
+		e[2] = v[2];
+	}
 	inline float r() const { return e[0]; }
 	inline void r(float v) { e[0] = v; }
 	inline float g() { return e[1]; }
