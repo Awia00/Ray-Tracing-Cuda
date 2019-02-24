@@ -103,6 +103,14 @@ inline float dot(const vec3 & v1, const vec3 & v2) {
 	return v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2];
 }
 
+inline vec3 operator+(const vec3 & v1, const float t) {
+	return vec3(v1[0] + t, v1[1] + t, v1[2] + t);
+}
+
+inline vec3 operator-(const vec3 & v1, const float t) {
+	return vec3(v1[0] - t, v1[1] - t, v1[2] - t);
+}
+
 inline vec3 operator*(const vec3 & v1, const float t) {
 	return vec3(v1[0] * t, v1[1] * t, v1[2] * t);
 }
@@ -129,6 +137,11 @@ inline std::ostream& operator<<(std::ostream& is, vec3 &t) {
 
 struct rgb : public vec3 {
 	rgb() = default;
+	rgb(float e0, float e1, float e2) {
+		e[0] = e0;
+		e[1] = e1;
+		e[2] = e2;
+	}
 	rgb(const vec3& v) {
 		e[0] = v[0];
 		e[1] = v[1];

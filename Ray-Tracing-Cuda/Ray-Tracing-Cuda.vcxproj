@@ -83,6 +83,8 @@
     <CudaCompile Include="main.cu" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="include\hitable.cuh" />
+    <ClInclude Include="include\hitable_list.cuh" />
     <ClInclude Include="include\ray.cuh" />
     <ClInclude Include="include\sphere.cuh" />
     <ClInclude Include="include\vec3.cuh" />
