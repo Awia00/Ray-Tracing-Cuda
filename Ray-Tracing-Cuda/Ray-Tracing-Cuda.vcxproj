@@ -83,6 +83,7 @@
     <CudaCompile Include="main.cu" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="include\camera.cuh" />
     <ClInclude Include="include\hitable.cuh" />
     <ClInclude Include="include\hitable_list.cuh" />
     <ClInclude Include="include\ray.cuh" />

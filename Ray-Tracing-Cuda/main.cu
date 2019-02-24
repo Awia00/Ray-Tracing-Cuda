@@ -3,11 +3,13 @@
 #include <vector>
 #include <memory>
 #include <limits>
+#include <random>
 #include "include/vec3.cuh"
 #include "include/ray.cuh"
 #include "include/sphere.cuh"
 #include "include/hitable.cuh"
 #include "include/hitable_list.cuh"
+#include "include/camera.cuh"
 
 #define RM(row,col,w) row*w+col
 #define CM(row,col,h) col*h+row
@@ -47,22 +49,27 @@ rgb color(const ray& r, const std::shared_ptr<hitable>& world) {
 	return vec3(1.0f, 1.0f, 1.0f)*(1.0f - t) + vec3(0.5f, 0.7f, 1.0f)*t;
 }
 
-std::vector<rgb> simple_ray_render(int h, int w) {
+std::vector<rgb> simple_ray_render(int h, int w, int samples) {
 	auto colors = std::vector<rgb>(w*h);
-	vec3 lower_left_corner(-2.0, -1.0, -1.0);
-	vec3 horizontal(4.0, 0.0, 0.0);
-	vec3 vertical(0.0, 2.0, 0.0);
-	vec3 origin(0.0, 0.0, 0.0);
+	auto c = camera();
 	auto world = std::make_shared<hitable_list>();
 	world->add_hitable(std::make_shared<sphere>(vec3(0, 0, -1), 0.5, rgb(1.0, 0, 0)));
 	world->add_hitable(std::make_shared<sphere>(vec3(0, -100.5, -1), 100, rgb(0.0, 1.0, 0)));
 
+	std::random_device rd;  //Will be used to obtain a seed for the random number engine
+	std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
+	std::uniform_real_distribution<float> dis(0.0, 1.0);
+
 	for (int i = 0; i < h; i++) {
 		for (int j = 0; j < w; j++) {
-			float u = float(j) / float(w);
-			float v = float(h - i) / float(h);
-			ray r(origin, lower_left_corner + (horizontal * u) + (vertical * v));
-			colors[RM(i, j, w)] = color(r, world);
+			rgb pix(0, 0, 0);
+			for (int s = 0; s < samples; s++) {
+				float u = float(j + dis(gen)) / float(w);
+				float v = float(h - i + dis(gen)) / float(h);
+				ray r = c.get_ray(u, v);
+				pix += color(r, world);
+			}
+			colors[RM(i, j, w)] = pix / float(samples);
 		}
 	}
 	return colors;
@@ -71,7 +78,8 @@ std::vector<rgb> simple_ray_render(int h, int w) {
 int main() {
 	int h = 100;
 	int w = 200;
+	int s = 100;
 
-	auto colors = simple_ray_render(h, w);
+	auto colors = simple_ray_render(h, w, s);
 	write_ppm_image(colors, h, w, "render");
 }
