@@ -63,15 +63,23 @@ struct vec3 {
 		return sqrt(e[0] * e[0] + e[1] * e[1] + e[2] * e[2]);
 	}
 
+	inline vec3& v_sqrt() {
+		e[0] = sqrt(e[0]);
+		e[1] = sqrt(e[1]);
+		e[2] = sqrt(e[2]);
+		return *this;
+	}
+
 	inline float squared_length() const {
 		return e[0] * e[0] + e[1] * e[1] + e[2] * e[2];
 	}
 
-	inline void make_unit_vector() {
+	inline vec3& make_unit_vector() {
 		float k = 1.0f / length();
 		e[0] *= k;
 		e[1] *= k;
 		e[2] *= k;
+		return *this;
 	}
 };
 
