@@ -9,10 +9,10 @@
 struct sphere : public hitable {
 	vec3 _center;
 	float _radius;
-	std::shared_ptr<material> _material;
+	material* _material;
 
 	//sphere() = default;
-	__device__ sphere(const vec3& center, float radius, const std::shared_ptr<material>& material) : _center(center), _radius(radius), _material(material) {
+	__device__ sphere(const vec3& center, float radius, material* material) : _center(center), _radius(radius), _material(material) {
 	}
 
 	__device__ bool hit(const ray& r, float t_min, float t_max, hit_record& out) const override {

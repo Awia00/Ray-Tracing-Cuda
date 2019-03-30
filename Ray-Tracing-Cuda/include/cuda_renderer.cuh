@@ -42,25 +42,47 @@ namespace cuda_renderer {
 		myfile.close();
 	}
 
-	__device__ vec3 color(const ray& r) {
-		vec3 unit_direction = unit_vector(r.direction());
-		float t = 0.5f*(unit_direction.y() + 1.0f);
-		return vec3(1.0, 1.0, 1.0)*(1.0f - t) + vec3(0.5, 0.7, 1.0)*t;
+	__device__ vec3 color(const ray& r, hitable** world) {
+		hit_record rec;
+		if ((*world)->hit(r, 0.0, FLT_MAX, rec)) {
+			return vec3(rec.normal.x() + 1.0f, rec.normal.y() + 1.0f, rec.normal.z() + 1.0f)*0.5f;
+		}
+		else {
+			vec3 unit_direction = unit_vector(r.direction());
+			float t = 0.5f*(unit_direction.y() + 1.0f);
+			return vec3(1.0, 1.0, 1.0)*(1.0f - t) + vec3(0.5, 0.7, 1.0)*t;
+		}
 	}
 
-	__global__ void render(vec3 *fb, int max_x, int max_y, vec3 lower_left_corner, vec3 horizontal, vec3 vertical, vec3 origin) {
+	__global__ void render(vec3 *fb, int max_x, int max_y, vec3 lower_left_corner, vec3 horizontal, vec3 vertical, vec3 origin, hitable **world) {
 		int row = threadIdx.x + blockIdx.x * blockDim.x;
 		int col = threadIdx.y + blockIdx.y * blockDim.y;
 		if ((col >= max_x) || (row >= max_y)) return;
 		int pixel_index = RM(row,col, max_x);
-		float u = float(row) / float(max_x);
-		float v = float(col) / float(max_y);
+		float u = float(col) / float(max_x);
+		float v = float(max_y-row) / float(max_y);
 		ray r(origin, lower_left_corner + horizontal*u + vertical*v);
-		fb[pixel_index] = color(r);
+		fb[pixel_index] = color(r, world);
+	}
+
+	__global__ void create_world(hitable **d_list, hitable **d_world) {
+		if (threadIdx.x == 0 && blockIdx.x == 0) {
+			*(d_list) = new sphere(vec3(0, 0, -1), 0.5, new lambertian(vec3(0.8f, 0.3f, 0.3f)));
+			*(d_list + 1) = new sphere(vec3(0, -100.5, -1), 100, new lambertian(vec3(0.8f, 0.8f, 0.0f)));
+			*d_world = new hitable_list(d_list, 2);
+		}
 	}
 
 	std::vector<rgb> cuda_ray_render(int w, int h, int samples) {
 		auto c = camera();
+		hitable **d_list;
+		checkCudaErrors(cudaMalloc((void **)& d_list, 2 * sizeof(hitable *)));
+		hitable **d_world;
+		checkCudaErrors(cudaMalloc((void **)& d_world, sizeof(hitable *)));
+		create_world<<<1, 1>>>(d_list, d_world);
+		checkCudaErrors(cudaGetLastError());
+		checkCudaErrors(cudaDeviceSynchronize());
+
 
 		size_t fb_size = w * h * sizeof(vec3);
 		vec3 *fb;
@@ -72,7 +94,7 @@ namespace cuda_renderer {
 		dim3 blocks(h / ty + 1, w / tx + 1);
 		dim3 threads(tx, ty);
 
-		render<<<blocks, threads>>>(fb, w, h, c._lower_left_corner, c._horizontal, c._vertical, c._origin);
+		render<<<blocks, threads>>>(fb, w, h, c._lower_left_corner, c._horizontal, c._vertical, c._origin, d_world);
 		checkCudaErrors(cudaGetLastError());
 		checkCudaErrors(cudaDeviceSynchronize()); 
 
