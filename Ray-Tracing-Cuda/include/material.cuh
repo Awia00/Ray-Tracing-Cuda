@@ -5,15 +5,15 @@
 #include "random_helpers.cuh"
 
 struct material {
-	virtual bool scatter(const ray& r_in, const hit_record& rec, vec3& attenuation, ray& scattered) const = 0;
+	__device__ virtual bool scatter(const ray& r_in, const hit_record& rec, vec3& attenuation, ray& scattered) const = 0;
 };
 
 struct lambertian :public material {
 	rgb albedo;
-	lambertian(const rgb& a) : albedo(a) {
+	__device__ lambertian(const rgb& a) : albedo(a) {
 	}
 
-	bool scatter(const ray& r_in, const hit_record& rec, vec3& attenuation, ray& scattered) const override {
+	__device__ bool scatter(const ray& r_in, const hit_record& rec, vec3& attenuation, ray& scattered) const override {
 		vec3 target = rec.p + rec.normal + random_in_unit_sphere() / 1.2f;
 		scattered = ray(rec.p, target - rec.p);
 		attenuation = albedo;
@@ -25,14 +25,14 @@ struct metal : public material {
 	rgb albedo;
 	float fuzz;
 
-	metal(const vec3& a, float f) : albedo(a) {
+	__device__ metal(const vec3& a, float f) : albedo(a) {
 		if (f < 1) { fuzz = f; }
 		else {
 			fuzz = 1;
 		}
 	}
 
-	bool scatter(const ray& r_in, const hit_record& rec, vec3& attenuation, ray& scattered) const override {
+	__device__ bool scatter(const ray& r_in, const hit_record& rec, vec3& attenuation, ray& scattered) const override {
 		vec3 reflected = reflect(unit_vector(r_in.direction()), rec.normal);
 		scattered = ray(rec.p, reflected + random_in_unit_sphere()*fuzz);
 		attenuation = albedo;
@@ -42,16 +42,16 @@ struct metal : public material {
 
 struct dielectric : public material {
 	float _ref_idx;
-	dielectric(float ri) : _ref_idx(ri) {
+	__device__ dielectric(float ri) : _ref_idx(ri) {
 	}
 
-	inline float schlick(float cosine) const {
+	__device__ inline float schlick(float cosine) const {
 		float r0 = (1 - _ref_idx) / (1 + _ref_idx);
 		r0 = r0 * r0;
 		return r0 + (1 - r0)*pow((1 - cosine), 5);
 	}
 
-	bool scatter(const ray& r_in, const hit_record& rec, vec3& attenuation, ray& scattered) const override {
+	__device__ bool scatter(const ray& r_in, const hit_record& rec, vec3& attenuation, ray& scattered) const override {
 		vec3 outward_normal, refracted;
 		vec3 reflected = reflect(r_in.direction(), rec.normal);
 		attenuation = vec3(1.0, 1.0, 1.0);

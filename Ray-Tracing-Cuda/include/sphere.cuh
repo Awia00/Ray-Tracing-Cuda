@@ -12,10 +12,10 @@ struct sphere : public hitable {
 	std::shared_ptr<material> _material;
 
 	//sphere() = default;
-	sphere(const vec3& center, float radius, const std::shared_ptr<material>& material) : _center(center), _radius(radius), _material(material) {
+	__device__ sphere(const vec3& center, float radius, const std::shared_ptr<material>& material) : _center(center), _radius(radius), _material(material) {
 	}
 
-	bool hit(const ray& r, float t_min, float t_max, hit_record& out) const override {
+	__device__ bool hit(const ray& r, float t_min, float t_max, hit_record& out) const override {
 		vec3 oc = r.origin() - _center;
 		float a = dot(r.direction(), r.direction());
 		float b = dot(oc, r.direction());
@@ -44,7 +44,7 @@ struct sphere : public hitable {
 		return false;
 	}
 
-	vec3 normal(const vec3& position) const {
+	__device__ vec3 normal(const vec3& position) const {
 		return _center - position;
 	}
 };

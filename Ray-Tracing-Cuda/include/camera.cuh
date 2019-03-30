@@ -9,14 +9,14 @@ struct camera {
 	vec3 _horizontal;
 	vec3 _vertical;
 
-	camera() {
+	__host__ __device__ camera() {
 		_lower_left_corner = vec3(-2.0, -1.0, -1.0);
 		_horizontal = vec3(4.0, 0.0, 0.0);
 		_vertical = vec3(0.0, 2.0, 0.0);
 		_origin = vec3(0.0, 0.0, 0.0);
 	}
 
-	ray get_ray(float u, float v) {
+	__device__ ray get_ray(float u, float v) {
 		return ray(_origin, _lower_left_corner + (_horizontal * u) + (_vertical * v) - _origin);
 	}
 };

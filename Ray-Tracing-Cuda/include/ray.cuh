@@ -6,10 +6,10 @@ struct ray {
 	vec3 _origin; // origin
 	vec3 _direction; // direction
 
-	ray() = default;
-	ray(const vec3& origin, const vec3& direction) : _origin(origin), _direction(direction) {
+	__device__ ray() {};
+	__device__ ray(const vec3& origin, const vec3& direction) : _origin(origin), _direction(direction) {
 	}
-	vec3 origin() const { return _origin; }
-	vec3 direction() const { return _direction; }
-	vec3 point_at_parameter(float t) const { return _origin + (_direction*t); }
+	__device__ vec3 origin() const { return _origin; }
+	__device__ vec3 direction() const { return _direction; }
+	__device__ vec3 point_at_parameter(float t) const { return _origin + (_direction*t); }
 };

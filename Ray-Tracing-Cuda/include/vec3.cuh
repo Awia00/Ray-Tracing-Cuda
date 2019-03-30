@@ -4,12 +4,19 @@
 
 struct vec3 {
 	float e[3];
-	__host__ __device__ vec3() = default;
+	__host__ __device__ vec3() {};
 	__host__ __device__ vec3(float e0, float e1, float e2) {
 		e[0] = e0;
 		e[1] = e1;
 		e[2] = e2;
 	}
+
+	__host__ __device__ inline float x() const { return e[0]; }
+	__host__ __device__ inline void x(float v) { e[0] = v; }
+	__host__ __device__ inline float y() { return e[1]; }
+	__host__ __device__ inline void y(float v) { e[1] = v; }
+	__host__ __device__ inline float z() { return e[2]; }
+	__host__ __device__ inline void z(float v) { e[2] = v; }
 
 	// unary operators
 	__host__ __device__ inline const vec3& operator+() const { return *this; }
@@ -160,7 +167,7 @@ inline std::ostream& operator<<(std::ostream& is, vec3 &t) {
 // Specific versions
 
 struct rgb : public vec3 {
-	__host__ __device__ rgb() = default;
+	__host__ __device__ rgb() {};
 	__host__ __device__ rgb(float e0, float e1, float e2) {
 		e[0] = e0;
 		e[1] = e1;
