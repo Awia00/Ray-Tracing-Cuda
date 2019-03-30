@@ -118,8 +118,8 @@ std::vector<rgb> cuda_ray_render(int h, int w, int samples) {
 }
 
 int main() {
-	int h = 500;
-	int w = 1000;
+	int w = 400;
+	int h = 200;
 	int s = 100;
 
 	try {

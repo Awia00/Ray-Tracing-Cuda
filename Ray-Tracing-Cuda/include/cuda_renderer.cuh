@@ -42,8 +42,8 @@ namespace cuda_renderer {
 		int col = threadIdx.y + blockIdx.y * blockDim.y;
 		if ((col >= max_x) || (row >= max_y)) return;
 		int pixel_index = RM3(row,col, max_x);
-		fb[pixel_index + 0] = float(col) / max_x;
-		fb[pixel_index + 1] = max_y-float(row) / max_y;
+		fb[pixel_index + 0] = float(col) / float(max_x);
+		fb[pixel_index + 1] = float(max_y-row) / float(max_y);
 		fb[pixel_index + 2] = 0.2;
 	}
 
