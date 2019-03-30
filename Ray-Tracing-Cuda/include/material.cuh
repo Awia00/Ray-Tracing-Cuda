@@ -5,7 +5,7 @@
 #include "random_helpers.cuh"
 
 struct material {
-	__device__ virtual bool scatter(const ray& r_in, const hit_record& rec, vec3& attenuation, ray& scattered) const = 0;
+	__device__ virtual bool scatter(const ray& r_in, const hit_record& rec, vec3& attenuation, ray& scattered, curandState *local_rand_state) const = 0;
 };
 
 struct lambertian :public material {
@@ -13,8 +13,8 @@ struct lambertian :public material {
 	__device__ lambertian(const rgb& a) : albedo(a) {
 	}
 
-	__device__ bool scatter(const ray& r_in, const hit_record& rec, vec3& attenuation, ray& scattered) const override {
-		vec3 target = rec.p + rec.normal + random_in_unit_sphere() / 1.2f;
+	__device__ bool scatter(const ray& r_in, const hit_record& rec, vec3& attenuation, ray& scattered, curandState *local_rand_state) const override {
+		vec3 target = rec.p + rec.normal + random_in_unit_sphere(local_rand_state) / 1.2f;
 		scattered = ray(rec.p, target - rec.p);
 		attenuation = albedo;
 		return true;
@@ -32,9 +32,9 @@ struct metal : public material {
 		}
 	}
 
-	__device__ bool scatter(const ray& r_in, const hit_record& rec, vec3& attenuation, ray& scattered) const override {
+	__device__ bool scatter(const ray& r_in, const hit_record& rec, vec3& attenuation, ray& scattered, curandState *local_rand_state) const override {
 		vec3 reflected = reflect(unit_vector(r_in.direction()), rec.normal);
-		scattered = ray(rec.p, reflected + random_in_unit_sphere()*fuzz);
+		scattered = ray(rec.p, reflected + random_in_unit_sphere(local_rand_state)*fuzz);
 		attenuation = albedo;
 		return dot(scattered.direction(), rec.normal) > 0;
 	}
@@ -51,7 +51,7 @@ struct dielectric : public material {
 		return r0 + (1 - r0)*pow((1 - cosine), 5);
 	}
 
-	__device__ bool scatter(const ray& r_in, const hit_record& rec, vec3& attenuation, ray& scattered) const override {
+	__device__ bool scatter(const ray& r_in, const hit_record& rec, vec3& attenuation, ray& scattered, curandState *local_rand_state) const override {
 		vec3 outward_normal, refracted;
 		vec3 reflected = reflect(r_in.direction(), rec.normal);
 		attenuation = vec3(1.0, 1.0, 1.0);

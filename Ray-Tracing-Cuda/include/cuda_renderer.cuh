@@ -43,16 +43,24 @@ namespace cuda_renderer {
 		myfile.close();
 	}
 
-	__device__ rgb color(const ray& r, hitable** world) {
-		hit_record rec;
-		if ((*world)->hit(r, 0.0, FLT_MAX, rec)) {
-			return vec3(rec.normal.x() + 1.0f, rec.normal.y() + 1.0f, rec.normal.z() + 1.0f)*0.5f;
+	__device__ vec3 color(const ray& r, hitable **world, curandState *local_rand_state) {
+		ray cur_ray = r;
+		float cur_attenuation = 1.0f;
+		for (int i = 0; i < 50; i++) {
+			hit_record rec;
+			if ((*world)->hit(cur_ray, 0.001f, FLT_MAX, rec)) {
+				vec3 target = rec.p + rec.normal + random_in_unit_sphere(local_rand_state);
+				cur_attenuation *= 0.5f;
+				cur_ray = ray(rec.p, target - rec.p);
+			}
+			else {
+				vec3 unit_direction = unit_vector(cur_ray.direction());
+				float t = 0.5f*(unit_direction.y() + 1.0f);
+				vec3 c = vec3(1.0, 1.0, 1.0)*(1.0f - t) + vec3(0.5, 0.7, 1.0)*t;
+				return c * cur_attenuation;
+			}
 		}
-		else {
-			vec3 unit_direction = unit_vector(r.direction());
-			float t = 0.5f*(unit_direction.y() + 1.0f);
-			return vec3(1.0, 1.0, 1.0)*(1.0f - t) + vec3(0.5, 0.7, 1.0)*t;
-		}
+		return vec3(0.0, 0.0, 0.0); // exceeded recursion
 	}
 
 	__global__ void render(vec3 *fb, int max_x, int max_y, int samples, camera ** camera, hitable **world, curandState *rand_state) {
@@ -66,7 +74,7 @@ namespace cuda_renderer {
 			float u = float(col + curand_uniform(&local_rand_state)) / float(max_x);
 			float v = float(max_y-row + curand_uniform(&local_rand_state)) / float(max_y);
 			ray r = (*camera)->get_ray(u, v);
-			colo += color(r, world);
+			colo += color(r, world, rand_state);
 		}
 		fb[pixel_index] = colo / float(samples);
 	}
@@ -129,10 +137,6 @@ namespace cuda_renderer {
 		render<<<blocks, threads>>>(fb, w, h, samples, d_camera, d_world, d_rand_state);
 		checkCudaErrors(cudaGetLastError());
 		checkCudaErrors(cudaDeviceSynchronize());
-
-		checkCudaErrors(cudaGetLastError());
-		checkCudaErrors(cudaDeviceSynchronize()); 
-
 
 		stop = clock();
 		double timer_seconds = ((double)(stop - start)) / CLOCKS_PER_SEC;

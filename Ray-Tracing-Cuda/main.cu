@@ -118,9 +118,9 @@
 //}
 
 int main() {
-	int w = 400;
-	int h = 200;
-	int s = 100;
+	int w = 1600;
+	int h = 800;
+	int s = 400;
 
 	try {
 		auto colors = cuda_renderer::cuda_ray_render(w, h, s);
