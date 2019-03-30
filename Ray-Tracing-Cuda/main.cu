@@ -12,6 +12,7 @@
 #include "include/camera.cuh"
 #include "include/material.cuh"
 #include "include/random_helpers.cuh"
+#include "include/cuda_renderer.cuh"
 
 #define RM(row,col,w) row*w+col
 #define CM(row,col,h) col*h+row
@@ -68,7 +69,37 @@ std::vector<rgb> simple_ray_render(int h, int w, int samples) {
 	world->add_hitable(std::make_shared<sphere>(vec3(-1, 0, -1), 0.5f, std::make_shared<dielectric>(1.5f)));
 	world->add_hitable(std::make_shared<sphere>(vec3(-1, 0, -1), -0.45f, std::make_shared<dielectric>(1.5f)));
 
-#pragma omp parallel for
+	for (int i = 0; i < h; i++) {
+		for (int j = 0; j < w; j++) {
+			rgb pix(0, 0, 0);
+			for (int s = 0; s < samples; s++) {
+				float u = float(j + dis(gen)) / float(w);
+				float v = float(h - i + dis(gen)) / float(h);
+				ray r = c.get_ray(u, v);
+				pix += color(r, world, 0);
+			}
+			pix /= float(samples);
+			pix = pix.v_sqrt(); // gamma correct (gamma 2)
+			colors[RM(i, j, w)] = pix;
+		}
+	}
+	return colors;
+}
+
+std::vector<rgb> cuda_ray_render(int h, int w, int samples) {
+	size_t fb_size = 3 * h*w * sizeof(float);
+	float *fb;
+	checkCudaErrors(cudaMallocManaged((void **)&fb, fb_size));
+
+	auto colors = std::vector<rgb>(w*h);
+	auto c = camera();
+	auto world = std::make_shared<hitable_list>();
+	world->add_hitable(std::make_shared<sphere>(vec3(0, 0, -1), 0.5f, std::make_shared<lambertian>(vec3(0.8f, 0.3f, 0.3f))));
+	world->add_hitable(std::make_shared<sphere>(vec3(0, -100.5, -1), 100.0f, std::make_shared<lambertian>(vec3(0.8f, 0.8f, 0.0f))));
+	world->add_hitable(std::make_shared<sphere>(vec3(1, 0, -1), 0.5f, std::make_shared<metal>(vec3(0.8f, 0.6f, 0.2f), 0.3f)));
+	world->add_hitable(std::make_shared<sphere>(vec3(-1, 0, -1), 0.5f, std::make_shared<dielectric>(1.5f)));
+	world->add_hitable(std::make_shared<sphere>(vec3(-1, 0, -1), -0.45f, std::make_shared<dielectric>(1.5f)));
+
 	for (int i = 0; i < h; i++) {
 		for (int j = 0; j < w; j++) {
 			rgb pix(0, 0, 0);
@@ -91,6 +122,11 @@ int main() {
 	int w = 1000;
 	int s = 100;
 
-	auto colors = simple_ray_render(h, w, s);
-	write_ppm_image(colors, h, w, "render");
+	try {
+		auto colors = cuda_renderer::cuda_ray_render(w, h, s);
+		cuda_renderer::write_ppm_image(colors, w, h, "render");
+	}
+	catch (...) {
+		std::cout << "failed" << std::endl;
+	}
 }

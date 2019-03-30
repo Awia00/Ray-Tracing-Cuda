@@ -92,6 +92,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\camera.cuh" />
+    <ClInclude Include="include\cuda_helpers.cuh" />
+    <ClInclude Include="include\cuda_renderer.cuh" />
     <ClInclude Include="include\hitable.cuh" />
     <ClInclude Include="include\hitable_list.cuh" />
     <ClInclude Include="include\material.cuh" />
