@@ -62,12 +62,13 @@ std::vector<rgb> simple_ray_render(int h, int w, int samples) {
 	auto colors = std::vector<rgb>(w*h);
 	auto c = camera();
 	auto world = std::make_shared<hitable_list>();
-	world->add_hitable(std::make_shared<sphere>(vec3(0, 0, -1), 0.5, std::make_shared<lambertian>(vec3(0.8, 0.3, 0.3))));
-	world->add_hitable(std::make_shared<sphere>(vec3(0, -100.5, -1), 100, std::make_shared<lambertian>(vec3(0.8, 0.8, 0.0))));
-	world->add_hitable(std::make_shared<sphere>(vec3(1, 0, -1), 0.5, std::make_shared<metal>(vec3(0.8, 0.6, 0.2), 0.3)));
-	world->add_hitable(std::make_shared<sphere>(vec3(-1, 0, -1), 0.5, std::make_shared<dielectric>(1.5f)));
-	world->add_hitable(std::make_shared<sphere>(vec3(-1, 0, -1), -0.45, std::make_shared<dielectric>(1.5f)));
+	world->add_hitable(std::make_shared<sphere>(vec3(0, 0, -1), 0.5f, std::make_shared<lambertian>(vec3(0.8f, 0.3f, 0.3f))));
+	world->add_hitable(std::make_shared<sphere>(vec3(0, -100.5, -1), 100.0f, std::make_shared<lambertian>(vec3(0.8f, 0.8f, 0.0f))));
+	world->add_hitable(std::make_shared<sphere>(vec3(1, 0, -1), 0.5f, std::make_shared<metal>(vec3(0.8f, 0.6f, 0.2f), 0.3f)));
+	world->add_hitable(std::make_shared<sphere>(vec3(-1, 0, -1), 0.5f, std::make_shared<dielectric>(1.5f)));
+	world->add_hitable(std::make_shared<sphere>(vec3(-1, 0, -1), -0.45f, std::make_shared<dielectric>(1.5f)));
 
+#pragma omp parallel for
 	for (int i = 0; i < h; i++) {
 		for (int j = 0; j < w; j++) {
 			rgb pix(0, 0, 0);
@@ -86,8 +87,8 @@ std::vector<rgb> simple_ray_render(int h, int w, int samples) {
 }
 
 int main() {
-	int h = 100;
-	int w = 200;
+	int h = 500;
+	int w = 1000;
 	int s = 100;
 
 	auto colors = simple_ray_render(h, w, s);

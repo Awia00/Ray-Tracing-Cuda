@@ -14,7 +14,7 @@ struct lambertian :public material {
 	}
 
 	bool scatter(const ray& r_in, const hit_record& rec, vec3& attenuation, ray& scattered) const override {
-		vec3 target = rec.p + rec.normal + random_in_unit_sphere();
+		vec3 target = rec.p + rec.normal + random_in_unit_sphere() / 1.2f;
 		scattered = ray(rec.p, target - rec.p);
 		attenuation = albedo;
 		return true;
@@ -64,7 +64,7 @@ struct dielectric : public material {
 		}
 		else {
 			outward_normal = rec.normal;
-			ni_over_nt = 1.0 / _ref_idx;
+			ni_over_nt = 1.0f / _ref_idx;
 			cosine = -dot(r_in.direction(), rec.normal) / r_in.direction().length();
 		}
 
