@@ -45,13 +45,16 @@ namespace cuda_renderer {
 
 	__device__ vec3 color(const ray& r, hitable **world, curandState *local_rand_state) {
 		ray cur_ray = r;
-		float cur_attenuation = 1.0f;
+		vec3 cur_attenuation = vec3(1.0f,1.0f,1.0f);
 		for (int i = 0; i < 50; i++) {
 			hit_record rec;
 			if ((*world)->hit(cur_ray, 0.001f, FLT_MAX, rec)) {
-				vec3 target = rec.p + rec.normal + random_in_unit_sphere(local_rand_state);
-				cur_attenuation *= 0.5f;
-				cur_ray = ray(rec.p, target - rec.p);
+				ray scattered;
+				vec3 attenuation;
+				if (rec.mat_ptr->scatter(cur_ray, rec, attenuation, scattered, local_rand_state)) {
+					cur_attenuation *= attenuation;
+					cur_ray = scattered;
+				}
 			}
 			else {
 				vec3 unit_direction = unit_vector(cur_ray.direction());
@@ -69,37 +72,48 @@ namespace cuda_renderer {
 		if ((col >= max_x) || (row >= max_y)) return;
 		int pixel_index = RM(row,col, max_x);
 		curandState local_rand_state = rand_state[pixel_index];
-		rgb colo(0, 0, 0);
+		rgb pix(0, 0, 0);
 		for (int s = 0; s < samples; s++) {
 			float u = float(col + curand_uniform(&local_rand_state)) / float(max_x);
 			float v = float(max_y-row + curand_uniform(&local_rand_state)) / float(max_y);
 			ray r = (*camera)->get_ray(u, v);
-			colo += color(r, world, rand_state);
+			pix += color(r, world, rand_state);
 		}
-		fb[pixel_index] = colo / float(samples);
+		pix = (pix / float(samples)).v_sqrt();
+		fb[pixel_index] = pix;
 	}
 
 	__global__ void render_init(int max_x, int max_y, curandState *rand_state) {
-		int i = threadIdx.x + blockIdx.x * blockDim.x;
-		int j = threadIdx.y + blockIdx.y * blockDim.y;
-		if ((i >= max_x) || (j >= max_y)) return;
-		int pixel_index = j * max_x + i;
+		int row = threadIdx.x + blockIdx.x * blockDim.x;
+		int col = threadIdx.y + blockIdx.y * blockDim.y;
+		if ((col >= max_x) || (row >= max_y)) return;
+		int pixel_index = RM(row, col, max_x);
 		//Each thread gets same seed, a different sequence number, no offset
 		curand_init(1984, pixel_index, 0, &rand_state[pixel_index]);
 	}
 
 	__global__ void create_world(hitable **d_list, hitable **d_world, camera **d_camera) {
 		if (threadIdx.x == 0 && blockIdx.x == 0) {
-			*(d_list) = new sphere(vec3(0, 0, -1), 0.5, new lambertian(vec3(0.8f, 0.3f, 0.3f)));
-			*(d_list + 1) = new sphere(vec3(0, -100.5, -1), 100, new lambertian(vec3(0.8f, 0.8f, 0.0f)));
-			*d_world = new hitable_list(d_list, 2);
+			d_list[0] = new sphere(vec3(0, 0, -1), 0.5,
+				new lambertian(vec3(0.1, 0.2, 0.5)));
+			d_list[1] = new sphere(vec3(0, -100.5, -1), 100,
+				new lambertian(vec3(0.8, 0.8, 0.0)));
+			d_list[2] = new sphere(vec3(1, 0, -1), 0.5,
+				new metal(vec3(0.8, 0.6, 0.2), 0.0));
+			d_list[3] = new sphere(vec3(-1, 0, -1), 0.5,
+				new dielectric(1.5f));
+			d_list[4] = new sphere(vec3(-1, 0, -1), -0.45,
+				new dielectric(1.5f));
+			*d_world = new hitable_list(d_list, 5);
 			*d_camera = new camera();
 		}
 	}
 
 	__global__ void free_world(hitable **d_list, hitable **d_world, camera ** d_camera) {
-		delete *(d_list);
-		delete *(d_list + 1);
+		for (int i = 0; i < 5; i++) {
+			delete ((sphere *)d_list[i])->_material;
+			delete d_list[i];
+		}
 		delete *d_world;
 		delete *d_camera;
 	}
@@ -109,7 +123,7 @@ namespace cuda_renderer {
 		curandState *d_rand_state;
 		checkCudaErrors(cudaMalloc((void **)&d_rand_state, w*h * sizeof(curandState)));
 		hitable **d_list;
-		checkCudaErrors(cudaMalloc((void **)& d_list, 2 * sizeof(hitable *)));
+		checkCudaErrors(cudaMalloc((void **)& d_list, 5 * sizeof(hitable *)));
 		hitable **d_world;
 		checkCudaErrors(cudaMalloc((void **)& d_world, sizeof(hitable *)));
 		camera **d_camera;
@@ -121,8 +135,6 @@ namespace cuda_renderer {
 		size_t fb_size = w * h * sizeof(vec3);
 		vec3 *fb;
 		checkCudaErrors(cudaMallocManaged((void **)&fb, fb_size));
-
-
 
 		clock_t start, stop;
 		start = clock();

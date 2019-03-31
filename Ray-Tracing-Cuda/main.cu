@@ -118,8 +118,8 @@
 //}
 
 int main() {
-	int w = 1600;
-	int h = 800;
+	int w = 1200;
+	int h = 600;
 	int s = 400;
 
 	try {

@@ -57,7 +57,7 @@ struct dielectric : public material {
 		attenuation = vec3(1.0, 1.0, 1.0);
 		float reflect_prob, ni_over_nt, cosine;
 
-		if (dot(r_in.direction(), rec.normal) > 0) {
+		if (dot(r_in.direction(), rec.normal) > 0.0f) {
 			outward_normal = -rec.normal;
 			ni_over_nt = _ref_idx;
 			cosine = _ref_idx * dot(r_in.direction(), rec.normal) / r_in.direction().length();
@@ -72,16 +72,15 @@ struct dielectric : public material {
 			reflect_prob = schlick(cosine);
 		}
 		else {
-			reflect_prob = 1.0;
+			reflect_prob = 1.0f;
 		}
 
-		if (dis(gen) < reflect_prob) {
+		if (curand_uniform(local_rand_state) < reflect_prob) {
 			scattered = ray(rec.p, reflected);
 		}
 		else {
 			scattered = ray(rec.p, refracted);
 		}
-
 		return true;
 	}
 };
